@@ -1,0 +1,10 @@
+qiskit==0.42.0
+matplotlib>=3.2.2
+hyperopt>=0.2.7
+optax
+chex
+pylatexenc
+jax
+jaxlib
+dill
+
