@@ -121,7 +121,7 @@ def replace_angles_in_circuit(qc, angles):
     i = 0
     for gate, qregs, cregs in new_qc.data:
         if gate.name in ['rx', 'ry', 'rz']:
-            gate.params = [angles[i]]
+            gate.params = [float(angles[i])]
             i += 1
         new_data.append((gate, qregs, cregs))
 

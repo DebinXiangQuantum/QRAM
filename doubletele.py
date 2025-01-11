@@ -1,6 +1,8 @@
 from qiskit import QuantumCircuit,transpile,ClassicalRegister
 from numpy import pi
 from qiskit_aer import Aer
+
+
 cir = QuantumCircuit(4,2)
 # 0 - 1 ->2 OR -> 3
 # cir.h(0)
@@ -16,7 +18,7 @@ c_res = ClassicalRegister(1,name='m')
 cir.add_register(c_res)
 cir.measure(3,c_res)
 print(cir)
-layer = [[0,1],[1,2],[2,3],[3,0]]
+layer = [[0,1],[1,2],[1,3]]
 opt_circ = transpile(cir, basis_gates=['rz','cz','h'], 
                      coupling_map=layer, 
                      optimization_level=2)
@@ -42,9 +44,10 @@ print(unitary)
 
 from cpflow import *
 decomposer = Synthesize(layer, target_unitary=unitary, label='cswaptele')
-options = StaticOptions(num_cp_gates=15, accepted_num_cz_gates=12, num_samples=10)
+options = StaticOptions(num_cp_gates=15, accepted_num_cz_gates=12, num_samples=10,target_loss=1e-10)
 results = decomposer.static(options) # Should take from one to five minutes.
 d = results.decompositions[0]  # This turned out to be the best decomposition for refinement.
 d.refine()
 print(d)
-print(d.circuit.draw())
+circuit : QuantumCircuit = d.circuit
+circuit.qasm(formatted=True,filename='doubletele.qasm')

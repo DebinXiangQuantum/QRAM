@@ -1,4 +1,3 @@
-from mqt import qmap
 from qiskit import QuantumCircuit,transpile
 from numpy import pi
 from qiskit_aer import Aer
@@ -30,17 +29,17 @@ u_target = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                      [0, 0, 0, 0, 0, 0, 1, 0],
                      [0, 0, 0, 0, 0, 1, 0, 0],
                      [0, 0, 0, 0, 0, 0, 0, 1]])
-layer = [[0, 1], [1, 2]]  # Linear connectivity
+layer = [[0, 1], [0, 2]]  # Linear connectivity
 decomposer = Synthesize(layer, target_unitary=u_target, label='cswap')
-options = StaticOptions(num_cp_gates=15, accepted_num_cz_gates=12, num_samples=10)
-
+options = StaticOptions(num_cp_gates=18, accepted_num_cz_gates=12, num_samples=20)
 results = decomposer.static(options) # Should take from one to five minutes.
 
 d = results.decompositions[0]  # This turned out to be the best decomposition for refinement.
 d.refine()
 print(d)
 print(d.circuit.draw())
-
+circuit : QuantumCircuit = d.circuit
+circuit.qasm(formatted=True,filename='cswap.qasm')
 print(counts)
 def cnot(a,b):
     cir.h(b)
