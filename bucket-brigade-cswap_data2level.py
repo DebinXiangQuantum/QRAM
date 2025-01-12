@@ -227,27 +227,31 @@ def plot_coupling_map(coupling_map, width, height):
     plt.show()
 
 if __name__ == "__main__":
-    address = [bin(i)[2:].zfill(2) for i in range(4)]
+    address = [bin(i)[2:].zfill(3) for i in range(8)]
     # data = [i / 8 for i in range(8)]
-    data = [1,0,1,1]
-    address_qregs = QuantumRegister(2, 'address')
+    data = [1,0,1,1,1,0,1,1]
+    address_qregs = QuantumRegister(3, 'address')
     bus_qregs = QuantumRegister(1, 'bus')
     bus_cregs = ClassicalRegister(1, 'bus_classical')
-    address_cregs = ClassicalRegister(2, 'address_classical')
+    address_cregs = ClassicalRegister(3, 'address_classical')
     circuit = QuantumCircuit(address_qregs, bus_qregs, address_cregs,bus_cregs,name='QRAM')
     circuit.h(address_qregs[0])
     circuit.h(address_qregs[1])
-    # circuit.h(address_qregs[2])
+    circuit.h(address_qregs[2])
+    Decompose_CSWAP = False
     qram = Qram(address, data, bandwidth=1)
     qram(circuit, address_qregs, bus_qregs)
     circuit.measure(bus_qregs,bus_cregs)
     circuit.measure(address_qregs,address_cregs)
+    print(circuit.count_ops())
+    print(circuit.num_qubits)
     print(circuit)
+    exit()
     simulator = Aer.get_backend('qasm_simulator')
     result = simulator.run(circuit).result()
     counts = result.get_counts(circuit)
     print(counts)
-    coupling_map = generate_grid_coupling_map(3,3)
+    coupling_map = generate_grid_coupling_map(3,6)
     # plot_coupling_map(coupling_map, 5, 5)
     print(coupling_map)
     
