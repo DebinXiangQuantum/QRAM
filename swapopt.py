@@ -28,10 +28,14 @@ u_target = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                      [0, 0, 0, 0, 1, 0, 0, 0],
                      [0, 0, 0, 0, 0, 0, 1, 0],
                      [0, 0, 0, 0, 0, 1, 0, 0],
-                     [0, 0, 0, 0, 0, 0, 0, 1]])
-layer = [[0, 1], [0, 2]]  # Linear connectivity
+                     [0, 0, 0, 0, 0, 0, 0, -1]])
+# u_target = np.array([[1, 0, 0, 0],
+#                      [0, 1, 0, 0],
+#                      [0, 0, 1, 0],
+#                      [0, 0, 0, 1]])
+layer = [[0, 1], [1, 2]]  # Linear connectivity
 decomposer = Synthesize(layer, target_unitary=u_target, label='cswap')
-options = StaticOptions(num_cp_gates=18, accepted_num_cz_gates=12, num_samples=20)
+options = StaticOptions(num_cp_gates=8, accepted_num_cz_gates=5, num_samples=20, target_loss=1e-8)
 results = decomposer.static(options) # Should take from one to five minutes.
 
 d = results.decompositions[0]  # This turned out to be the best decomposition for refinement.

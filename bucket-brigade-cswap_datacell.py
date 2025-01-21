@@ -2,7 +2,28 @@ from qiskit import QuantumCircuit, transpile, QuantumRegister, ClassicalRegister
 from qiskit_aer import Aer
 from qiskit.circuit.library import RYGate, RZGate
 import numpy as np
-Decompose_CSWAP = True
+from math import pi
+Decompose_CSWAP = False
+Subspace_Embedding = False
+Data_Load = True
+DSWAP_Embedding = False
+def control_cswap(cir, target, control, left, right):
+    qasm_file_path = 'gates/cswap_control_mid.qasm'
+    circuit_from_qasm = QuantumCircuit.from_qasm_file(qasm_file_path)
+    q = [control,left,right,target]
+    ## topology: control -> data , control -> target1, control -> target0
+    # 将 circuit_from_qasm 添加到新电路的指定比特上
+    cir.compose(circuit_from_qasm, qubits=[qi._bits[0] for qi in q], inplace=True)
+
+
+def control_cswap_reverse(cir, target, control, left, right):
+    qasm_file_path = 'gates/cswap_control_mid.qasm'
+    circuit_from_qasm = QuantumCircuit.from_qasm_file(qasm_file_path)
+    q = [control,left,right,target]
+    ## topology: control -> data , control -> target1, control -> target0
+    # 将 circuit_from_qasm 添加到新电路的指定比特上
+    cir.compose(circuit_from_qasm.inverse(), qubits=[qi._bits[0] for qi in q], inplace=True)
+
 def cswap(cir:QuantumCircuit,*q):
     if Decompose_CSWAP:
         cir.rz(1.9986164569854736,q[1])
@@ -46,6 +67,69 @@ def cswap(cir:QuantumCircuit,*q):
         cir.rz(-1.4985880851745605,q[2])
         cir.rx(1.399273157119751,q[2])
         cir.rz(-2.39945387840271,q[2])
+    elif Subspace_Embedding:
+        from qiskit import QuantumCircuit
+
+        # 从 QASM 文件中读取量子电路
+        # qasm_file_path = 'cswap.qasm'
+        # circuit_from_qasm = QuantumCircuit.from_qasm_file(qasm_file_path)
+
+        # # 将 circuit_from_qasm 添加到新电路的指定比特上
+        # cir.compose(circuit_from_qasm, qubits=[qi._bits[0] for qi in q], inplace=True)
+        a,b,c = q
+        cir.rx(pi,a)
+        cir.rz(-1.9344532489776611,b)
+        cir.rz(1.214379072189331,c)
+        cir.rx(3.124248743057251,b)
+        cir.rx(1.5707943439483643,c)
+        cir.cz(b,c)
+        cir.rz(3.1343448162078857,b)
+        cir.rx(0.7853982448577881,b)
+        cir.rz(-3.1415913105010986,c)
+        cir.rx(1.5881779193878174,c)
+        cir.cz(b,c)
+        cir.rz(3.1415913105010986,b)
+        cir.rx(2.3560431003570557,b)
+        cir.cz(a,b)
+        cir.rx(pi,a)
+        cir.rx(2.3560431003570557,b)
+        cir.cz(b,c)
+        cir.rx(2.3561947345733643,b)
+        cir.rx(1.553415060043335,c)
+        cir.cz(b,c)
+        cir.rx(0.01736760139465332,b)
+        cir.rz(1.9268419742584229,b)
+        cir.rx(1.5708487033843994,c)
+        cir.rz(-1.2143813371658325,c)
+        # 打印新的电路
+        # cir.rx(pi,q[0])
+        # cir.rz(3.0797979831695557,q[1])
+        # cir.rx(1.5425798892974854,q[1])
+        # cir.rz(3.079930067062378,q[2])
+        # cir.rx(pi/2,q[2])
+        # cir.cz(q[1],q[2])
+        # cir.rx(pi/4,q[1])
+        # cir.rz(-pi,q[2])
+        # cir.rx(pi/4,q[2])
+        # cir.cz(q[1],q[2])
+        # cir.rx(1.5907633304595947,q[1])
+        # cir.cz(q[0],q[1])
+        # cir.rx(pi,q[0])
+        # cir.rz(-pi,q[0])
+        # cir.rz(2.5871939500151235,q[1])
+        # cir.rx(1.550781488418579,q[1])
+        # cir.rz(pi/2,q[2])
+        # cir.rx(2.5871939500151235,q[2])
+        # cir.cz(q[1],q[2])
+        # cir.rx(pi/4,q[1])
+        # cir.rz(pi/2,q[2])
+        # cir.rx(pi/4,q[2])
+        # cir.cz(q[1],q[2])
+        # cir.rx(1.599186658859253,q[1])
+        # cir.rz(2.650718801466388,q[1])
+        # cir.rz(pi,q[2])
+        # cir.rx(pi/2,q[2])
+        # cir.rz(2.650718801466388,q[2])
     else:
         cir.cswap(*q)
 
@@ -128,16 +212,22 @@ class Qram:
 
         return circuit
     def router(self, circuit: QuantumCircuit, router: QuantumRegister, incident, left, right):
+        # if DSWAP_Embedding:
+        #     control_cswap(circuit,incident,router, left, right)
+        # else:
         circuit.x(router)
         cswap(circuit,router, incident, left)
         circuit.x(router)
         cswap(circuit,router, incident, right)
 
     def reverse_router(self, circuit: QuantumCircuit, router, incident, left, right):
-        cswap(circuit,router, incident, right)
-        circuit.x(router)
-        cswap(circuit,router, incident, left)
-        circuit.x(router)
+        if DSWAP_Embedding:
+            control_cswap_reverse(circuit,incident,router, left, right)
+        else:
+            cswap(circuit,router, incident, right)
+            circuit.x(router)
+            cswap(circuit,router, incident, left)
+            circuit.x(router)
 
     def layers_router(self, circuit, router_obj, incident, address_index, mid):
         if router_obj.level == 0:
@@ -192,19 +282,24 @@ class Qram:
             circuit.swap(incident, mid)
 
     def decompose_circuit(self, circuit):
-        for idx in self.bus_qubits:
-            circuit.h(idx)
+        if Data_Load:
+            for idx in self.bus_qubits:
+                circuit.h(idx)
         incidents = {i:self.address_qubits[i] for i in range(self.address_qubits._size)}
         incidents.update({i+self.address_qubits._size:self.bus_qubits[i] for i in range(self.bus_qubits._size)})
-        for idx in range(len(incidents)):
+        if Data_Load:
+            incidents_len = len(incidents)
+        else:
+            incidents_len = len(incidents)-1
+        for idx in range(incidents_len):
             self.layers_router(circuit, self.routers[0][0], incidents[idx], idx, self.incident)
             circuit.barrier()
         for router_obj in self.routers[-1]:
+            if not Data_Load:
+                circuit.h(router_obj.data)
             if self.data[int(router_obj.address + '1', 2)] == 1:
                 circuit.cz(router_obj.qreg, router_obj.data)
-            # else:
-            #     circuit.cz(router_obj.qreg, router_obj.data)
-
+            
             if self.data[int(router_obj.address + '0', 2)] == 1:
                 circuit.x(router_obj.qreg)
                 circuit.cz(router_obj.qreg, router_obj.data)
@@ -237,50 +332,65 @@ def plot_coupling_map(coupling_map, width, height):
     plt.axis('off')
     plt.show()
 
-def cz_depth(circuit):
+def cswap_depth(circuit):
     new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
     for gate in circuit.data:
-        if gate[0].name == 'cz':
+        if gate[0].name == 'cswap' or gate[0].name == 'cz':
             new_circuit.data.append(gate)
-    
     return new_circuit.depth()
+
+def swap_depth(circuit):
+    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+    for gate in circuit.data:
+        if gate[0].name == 'swap' or gate[0].name == 'cz': 
+            new_circuit.data.append(gate)
+    return new_circuit.depth()        
             
 if __name__ == "__main__":
-    address = [bin(i)[2:].zfill(3) for i in range(8)]
-    # data = [i / 8 for i in range(8)]
-    data = [0,0,1,1,1,0,0,1]
-    address_qregs = QuantumRegister(3, 'address')
-    bus_qregs = QuantumRegister(1, 'bus')
-    bus_cregs = ClassicalRegister(1, 'bus_classical')
-    address_cregs = ClassicalRegister(3, 'address_classical')
-    circuit = QuantumCircuit(address_qregs, bus_qregs, address_cregs,bus_cregs)
-    circuit.h(address_qregs[0])
-    circuit.h(address_qregs[1])
-    circuit.h(address_qregs[2])
-    qram = Qram(address, data, bandwidth=1)
-    qram(circuit, address_qregs, bus_qregs)
-    circuit.measure(bus_qregs,bus_cregs)
-    circuit.measure(address_qregs,address_cregs)
-    print(circuit.num_qubits)
-    simulator = Aer.get_backend('qasm_simulator')
-    result = simulator.run(circuit,shots=10000).result()
-    counts = result.get_counts(circuit)
-    print("测量结果：",{k[::-1]:v/10000 for k,v in counts.items()})
-    transpiled_circuit = transpile(circuit,basis_gates=['rx','rz','cz'],optimization_level=3)
-    print("cz 深度:",cz_depth(transpiled_circuit))
+    with open(f"counts_data.csv","w") as f:
+        f.write("level,num_qubits,swap_depth,cswap_depth,cswap_count,swap_count,h_count,x_count\n")
+    levels = range(3,20)
+    for level in levels:
+        address = [bin(i)[2:].zfill(level) for i in range(2**level)]
+        # data = [i / 8 for i in range(8)]
+        data = [0]*(2**level)
+        address_qregs = QuantumRegister(level, 'address')
+        bus_qregs = QuantumRegister(1, 'bus')
+        bus_cregs = ClassicalRegister(1, 'bus_classical')
+        address_cregs = ClassicalRegister(level, 'address_classical')
+        circuit = QuantumCircuit(address_qregs, bus_qregs, address_cregs,bus_cregs)
+        for i in range(level):
+            circuit.h(address_qregs[i])
+        qram = Qram(address, data, bandwidth=1)
+        qram(circuit, address_qregs, bus_qregs)
+        circuit.measure(bus_qregs,bus_cregs)
+        circuit.measure(address_qregs,address_cregs)
+        print(circuit.num_qubits)
+        # print(circuit)
+        # simulator = Aer.get_backend('qasm_simulator')
+        # num_shots = 10000
+        # result = simulator.run(circuit,shots=num_shots).result()
+        # counts = result.get_counts(circuit)
+        # print("测量结果：",{k[::-1]:v/num_shots for k,v in counts.items()})
+        # transpiled_circuit = transpile(circuit,basis_gates=['x','h','cswap','swap'],optimization_level=3)
+        num_qubits = circuit.num_qubits
+        swap_d = swap_depth(circuit)
+        cswap_d = cswap_depth(circuit)
+        op_counts = circuit.count_ops()
+        with open(f"counts_data.csv","a") as f:
+            f.write(f"{level},{num_qubits},{swap_d},{cswap_d},{op_counts['cswap']},{op_counts['swap']},{op_counts['h']},{op_counts['x']}\n")
+            
+    # coupling_map = generate_grid_coupling_map(4,5)
+    # # plot_coupling_map(coupling_map, 5, 5)
+    # print(coupling_map)
     
-    print("门数量:",transpiled_circuit.count_ops())
-    coupling_map = generate_grid_coupling_map(4,5)
-    # plot_coupling_map(coupling_map, 5, 5)
-    print(coupling_map)
+    # # transpiled_circuit = transpile(circuit,coupling_map=coupling_map,basis_gates=['x','h','cswap','swap','rz','cz'])
+    # transpiled_circuit = transpile(circuit,coupling_map=coupling_map,basis_gates=['rx','rz','cz'],routing_method='basic',initial_layout=None,seed_transpiler=42)
+    # # print(transpiled_circuit)
+    # result = simulator.run(transpiled_circuit).result()
+    # counts = result.get_counts(circuit)
+    # print(counts)
+    # print("cz 深度:",cz_depth(transpiled_circuit))
     
-    # transpiled_circuit = transpile(circuit,coupling_map=coupling_map,basis_gates=['x','h','cswap','swap','rz','cz'])
-    transpiled_circuit = transpile(circuit,coupling_map=coupling_map,basis_gates=['rx','rz','cz'])
-    # print(transpiled_circuit)
-    result = simulator.run(transpiled_circuit).result()
-    counts = result.get_counts(circuit)
-    print(counts)
-    print("cz 深度:",cz_depth(transpiled_circuit))
-    
-    print("门数量:",transpiled_circuit.count_ops())
-    print(transpiled_circuit.layout.input_qubit_mapping)
+    # print("门数量:",transpiled_circuit.count_ops())
+    # print(transpiled_circuit.layout.input_qubit_mapping)
