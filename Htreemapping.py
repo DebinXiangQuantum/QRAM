@@ -1,6 +1,6 @@
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 import numpy as np
-from qrams.bucktele import Qram
+from qram.qramtemplate.bucktele import Qram
 
 class RouterQubit:
     def __init__(self, x, y, level, direction):
@@ -320,7 +320,7 @@ class Grid:
             self.map_qubits_to_grid(node.left)
         if node.right:
             self.map_qubits_to_grid(node.right)
-        return layout
+        return self.layout
 
 
 class ResourceEstimator:

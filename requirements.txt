@@ -7,4 +7,6 @@ pylatexenc
 jax
 jaxlib
 dill
+qiskit_aer
+qiskit_aer_gpu
 

@@ -1,0 +1,30 @@
+[project]
+name = "qram"
+version = "0.1"
+description = "quantum random access memory project"
+authors = [
+    {name = "Debin Xiang", email = "db.xiang@zju.edu.cn"},
+    {name = "Jiyu Jie", email = "jiyujie@zju.edu.cn"},
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "qiskit",
+    "matplotlib",
+    "hyperopt",
+    "optax",
+    "chex",
+    "pylatexenc",
+    "jax",
+    "jaxlib",
+    "dill",
+    "ray",
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["qram"]  # 只包含 qram 包
