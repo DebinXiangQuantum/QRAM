@@ -54,7 +54,8 @@ class RouterQubit:
         circuit.add_register(self.data)
         
 class Qram:
-    def __init__(self, data, bandwidth=1, config=None):
+    def __init__(self,address, data, bandwidth=1, config=None):
+        self.address = address
         self.name = "Bucket-Brigade"
         self.data = data
         self.bandwidth = bandwidth

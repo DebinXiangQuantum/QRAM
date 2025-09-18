@@ -6,11 +6,11 @@ def fidelity2lambda_depolar(fidelity,num_qubits=1):
     return 1-param
 
 def build_noise_model(
-        p_reset = 0.03,
-        p_meas = 0.0085,
-        p_gate_cz = 0.008,
-        p_gate_single = 0.0006,
-        p_gate_id = 0.0006,
+        p_reset = 0.007,
+        p_meas = 0.0359,
+        p_gate_cz = 0.005,
+        p_gate_single = 0.0007,
+        p_gate_id = 0.0007,
         noise_scale = 0.001,
     ):
     noise_scale_factor = noise_scale/0.001

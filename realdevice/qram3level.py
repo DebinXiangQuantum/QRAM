@@ -25,6 +25,8 @@ cir = QuantumCircuit(AddressBus,DataBus,RouterTwo,RouterDTwo,RouterThree,RouterD
 
 #c的状态为|0>
 def cswap(a,b,c,mode):
+    cir.cswap(a,b,c)
+    return None
     if mode==0:
         cir.rx(np.pi,a)
         cir.rz(-1.9344532489776611,b)
@@ -84,13 +86,19 @@ def cswap(a,b,c,mode):
         cir.rx(np.pi/2,c)
         cir.rz(np.pi/32,a)
         cir.rz(8*np.pi/15,c)
-
+   
 #a为控制比特，b为左，c为右，d为|0>,mode=0为控制比特处于中心,[[0,1],[0,2],[0,3]]
 def cswap_twice(a,b,c,d,mode):
     if mode==0:
         qasm_file_path = 'gates/cswap_control_mid.qasm'
         circuit_from_qasm = QuantumCircuit.from_qasm_file(qasm_file_path)
         cir.compose(circuit_from_qasm, qubits=[a,b,c,d], inplace=True)
+    elif mode == 2:
+        cir.x(a)
+        cir.cswap(a,b,d)
+        cir.x(a)
+        cir.cswap(a,c,d)
+
 
 def cx(a,b):
     cir.h(b)
@@ -110,9 +118,9 @@ def TwoLevelQRAM(RouterQ:list,RDQubit:list,mode):
     rootData = RDQubit[0]
     leftData = RDQubit[1]
     rightData = RDQubit[2]
-    cswap(root,rootData,rightRouter,0)
+    cswap(root,rootData,rightRouter,mode)
     cir.x(root)
-    cswap(root,rootData,leftRouter,0)
+    cswap(root,rootData,leftRouter,mode)
     cir.x(root)
     if mode == 0:
         if classicalData[1]==1:
@@ -144,7 +152,7 @@ def TwoLevelQRAM(RouterQ:list,RDQubit:list,mode):
     # cir.x(root)
     # cir.cswap(root,leftData,rootData)
     # cir.x(root)
-    cswap_twice(root,leftData,rightData,rootData,0)
+    cswap_twice(root,leftData,rightData,rootData,mode)
 
 #b,c为Bell态00+11
 def teleportation(a,b,c):
@@ -183,7 +191,8 @@ rightTwoQramRouter = [RouterTwo[1],RouterThree[2],RouterThree[3]]
 leftTwoQramRouterD = [RouterDTwo[0],RouterDThree[0],RouterDThree[1]]
 rightTwoQramRouterD = [RouterDTwo[1],RouterDThree[2],RouterDThree[3]]
 
-TwoLevelQRAM(leftTwoQramRouter,leftTwoQramRouterD,0); TwoLevelQRAM(rightTwoQramRouter,rightTwoQramRouterD,1)
+# TwoLevelQRAM(leftTwoQramRouter,leftTwoQramRouterD,0); TwoLevelQRAM(rightTwoQramRouter,rightTwoQramRouterD,1)
+TwoLevelQRAM(leftTwoQramRouter,leftTwoQramRouterD,2); TwoLevelQRAM(rightTwoQramRouter,rightTwoQramRouterD,2)
 # cir.barrier()
 cswap(AddressBus[0],RouterDTwo[1],AddressBus[1],1)
 cir.x(AddressBus[0])
@@ -225,8 +234,11 @@ cir.x(AddressBus[0])
 # cswap(AddressBus[0],AddressBus[1],AddressBus[2],0)
 # cir.x(AddressBus[0])
 
+print(cir.draw())
 cir.measure(AddressBus[::-1],AddressResult)
 cir.measure(DataBus,DataResult)
+
+exit()
 # cir.measure(RouterTwo[::-1],CRouterTwo)
 # cir.measure(RouterThree[::-1],CRouterThree)
 # cir.measure(RouterDTwo[::-1],CRouterDTwo)

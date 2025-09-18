@@ -1,34 +1,46 @@
 from qiskit import QuantumCircuit,transpile
 from numpy import pi
 from qiskit_aer import Aer
-cir = QuantumCircuit(3)
-# cir.x(0)
-# cir.h(1)
-# cir.h(2)
-cir.cswap(0,1,2)
+cir = QuantumCircuit(2)
+
+cir.rz(5*pi/6,0)
+cir.rz(5*pi/6,1)
+cir.rx(pi/2,0)
+cir.rx(pi/2,1)
+cir.cz(0,1)
+cir.rz(pi/2,0)
+cir.rz(-pi,1)
+cir.rx(pi/2,0)
+cir.rx(pi/4,1)
+cir.cz(0,1)
+cir.rz(3*pi/4,0)
+cir.rz(pi/2,1)
+cir.rx(pi/2,0)
+cir.rx(pi/2,1)
+
 print(cir)
-opt_circ = transpile(cir, basis_gates=['rz','cz','h'], coupling_map=[[0,1],[1,2]], optimization_level=1)
-# opt_circ = transpile(cir, basis_gates=['rz','cz','h'],  optimization_level=1)
+opt_circ = transpile(cir, basis_gates=['rz','cz','rx','ry','t'], coupling_map=[[0,1]], optimization_level=1)
 print(opt_circ)
 print(opt_circ.count_ops())
 print(opt_circ.depth())
-opt_circ.measure_all()
-simulator = Aer.get_backend('qasm_simulator')
-result = simulator.run(transpile(opt_circ, simulator)).result()
-counts = result.get_counts(opt_circ)
+simulator = Aer.get_backend('unitary_simulator')
+result = simulator.run(cir).result()
+unitary = result.get_unitary()
+print(unitary)
 
 ## cpflow opt
 import numpy as np
 from cpflow import *
 
-u_target = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-                     [0, 1, 0, 0, 0, 0, 0, 0],
-                     [0, 0, 1, 0, 0, 0, 0, 0],
-                     [0, 0, 0, 1, 0, 0, 0, 0],
-                     [0, 0, 0, 0, 1, 0, 0, 0],
-                     [0, 0, 0, 0, 0, 0, 1, 0],
-                     [0, 0, 0, 0, 0, 1, 0, 0],
-                     [0, 0, 0, 0, 0, 0, 0, -1]])
+# u_target = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+#                      [0, 1, 0, 0, 0, 0, 0, 0],
+#                      [0, 0, 1, 0, 0, 0, 0, 0],
+#                      [0, 0, 0, 1, 0, 0, 0, 0],
+#                      [0, 0, 0, 0, 1, 0, 0, 0],
+#                      [0, 0, 0, 0, 0, 0, 1, 0],
+#                      [0, 0, 0, 0, 0, 1, 0, 0],
+#                      [0, 0, 0, 0, 0, 0, 0, -1]])
+u_target = unitary
 # u_target = np.array([[1, 0, 0, 0],
 #                      [0, 1, 0, 0],
 #                      [0, 0, 1, 0],

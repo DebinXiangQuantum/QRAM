@@ -2,10 +2,11 @@
 from qiskit import QuantumCircuit, transpile, QuantumRegister, ClassicalRegister
 import numpy as np
 from qram.qramtemplate.buckdatacell import Qram,swap_depth,cswap_depth
+from qram.config import Config
 if __name__ == "__main__":
     with open(f"counts_data.csv","w") as f:
         f.write("level,num_qubits,swap_depth,cswap_depth,cswap_count,swap_count,h_count,x_count\n")
-    levels = range(3,20)
+    levels = range(2,20)
     for level in levels:
         # address = [bin(i)[2:].zfill(level) for i in range(2**level)]
         address =np.array([1]*(2**level))
@@ -18,7 +19,10 @@ if __name__ == "__main__":
         address_cregs = ClassicalRegister(level, 'address_classical')
         circuit = QuantumCircuit(address_qregs, bus_qregs, address_cregs,bus_cregs)
         circuit.initialize(address,address_qregs[::-1])
-        qram = Qram(address, data, bandwidth=1)
+        config = Config()
+        config.decompose_mode = 'none'
+        config.load_bus = False
+        qram = Qram(address, data, bandwidth=1,config=config)
         qram(circuit, address_qregs, bus_qregs)
         circuit.measure(bus_qregs,bus_cregs)
         circuit.measure(address_qregs,address_cregs)

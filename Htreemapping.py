@@ -12,6 +12,7 @@ class RouterQubit:
         self.left = None
         self.right = None
         self.root = None
+        self.parent = None
         self.direction = direction
         self.qreg = QuantumRegister(1,self.reg_name)
 
@@ -137,11 +138,13 @@ def map_h_tree_to_grid(node: RouterQubit, x, y, length, depth):
     # 水平线段
     if depth == 0.5:
         node.add_left_router(left_x, y)
-        node.add_left(left_x,node.parent.y)
+        if node.parent is not None:
+            node.add_left(left_x,node.parent.y)
         # 右垂直线段
         node.add_right_router(right_x, y)
-        node.add_right(right_x,node.parent.y)
-        node.min_length = abs(y-node.parent.y)
+        if node.parent is not None:
+            node.add_right(right_x,node.parent.y)
+        node.min_length = abs(y-node.parent.y) if node.parent is not None else 0
         node.left.min_length = node.min_length
         node.right.min_length = node.min_length
         node.left_router.min_length = node.min_length
@@ -387,7 +390,7 @@ if __name__ == "__main__":
     with open('h_tree.csv', 'w') as f:
         f.write('level,tele_count,swap_count,tele_depth,swap_depth\n')
     # 初始化参数
-    for DEPTH in range(3,20):
+    for DEPTH in range(2,20):
         center_x, center_y = 0, 0  # H 树中心
         initial_length = 10  # 初始水平线段长度
         max_depth = (DEPTH-1)/2  # 最大递归深度（支持半整数）
