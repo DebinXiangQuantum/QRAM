@@ -55,7 +55,7 @@ def test_fidelity(i):
     # circuit.h(address_qregs[0])
     # circuit.h(address_qregs[1])
     # sparse_num = 2**np.random.randint(0,level+1)
-    sparse_num = 1
+    sparse_num = 4
     generate_sparse_state(precircuit,address_qregs,sparse_num = sparse_num)
     config0 = Config()
     config1 = Config()

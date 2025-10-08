@@ -67,7 +67,7 @@ julia> include("simulations/fidelitysim/QramFidelity.jl")
 ```bash
 # 从命令行直接运行
 screen -S qram
-julia QramFidelity.jl
+julia optQram.jl
 ```
 
 ## 查看运行窗口

@@ -10,7 +10,8 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "qiskit",
+    "qiskit<1.0",
+    "qiskit_aer",
     "matplotlib",
     "hyperopt",
     "optax",
@@ -20,6 +21,11 @@ dependencies = [
     "jaxlib",
     "dill",
     "ray",
+    "ipykernel>=6.29.5",
+    "jinja2>=3.1.6",
+    "qutip==4.5.3",
+    "numpy<1.22",
+    "pandas<1.4",
 ]
 
 [build-system]
@@ -28,3 +34,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["qram"]  # 只包含 qram 包
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true

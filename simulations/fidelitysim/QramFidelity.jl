@@ -1,4 +1,4 @@
-using Base.Threads,Distributed,BenchmarkTools,HDF5,Plots
+using Base.Threads,Distributed,BenchmarkTools,HDF5,Plots,LRUCache
 addprocs(128-nprocs()) #增加到16进程
 @everywhere using LinearAlgebra,SharedArrays,Base.Threads
 
@@ -226,11 +226,10 @@ end
 end
 
 #p均为两比特门错误率
-@everywhere function genCswapDepolarizeError(p::Float64)
-    p_single =  p/10
+@everywhere function genCswapDepolarizeError(p::Float64,p_single::Float64,p_idle_twoqgate::Float64)
     gate1 = pauliDictMutil(pauliDictMutil(genPauliDict(p_single,1),genPauliDict(p_single,2)),genPauliDict(p_single,3))
-    gate2 = pauliDictMutil(genPauliDict(p_single,1),genPauliDict(p,[2,3]))
-    gate3 = pauliDictMutil(genPauliDict(p_single,3),genPauliDict(p,[1,2]))
+    gate2 = pauliDictMutil(genPauliDict(p_idle_twoqgate,1),genPauliDict(p,[2,3]))
+    gate3 = pauliDictMutil(genPauliDict(p_idle_twoqgate,3),genPauliDict(p,[1,2]))
     a = pauliDictMutil(gate2,gate1)
     a = pauliDictMutil(gate1,a)
     a = pauliDictMutil(gate2,a)
@@ -244,19 +243,26 @@ end
     return a
 end
 
-@everywhere function genLongIdentityError(p::Float64,layer::Int64)
-    a = Dict{String,Float64}()
-    a["0"] = 1-p
-    a["1"] = a["2"] = a["3"] = p/3
-    b = a
-    for _ = 1:layer-1
-        b = pauliDictMutil(a,b;mode=1)
+@everywhere function genLongIdentityError(p_idle_single::Float64,p_idle_twoqgate::Float64,layer::Int64)
+    single_a = Dict{String,Float64}()
+    single_a["0"] = 1-p_idle_single
+    single_a["1"] = single_a["2"] = single_a["3"] = p_idle_single/3
+
+    twoq_a = Dict{String,Float64}()
+    twoq_a["0"] = 1-p_idle_twoqgate
+    twoq_a["1"] = twoq_a["2"] = twoq_a["3"] = p_idle_twoqgate/3
+
+    b = single_a
+    maxIter = Int(div(layer-1,2)) ## twoq idle + oneq idle
+    for _ = 1:maxIter
+        b = pauliDictMutil(twoq_a,b;mode=1)
+        b = pauliDictMutil(single_a,b;mode=1)
     end
     return b
 end
 
 @everywhere function genSwapError(p::Float64,layer::Int64)
-    p_single = p/10
+    p_single = p/6
     I_single = pauliDictMutil(genPauliDict(p_single,1;indexList=[1,2]),genPauliDict(p_single,1;indexList=[1,2]);mode=2)
     cz = genPauliDict(p,[1,2];indexList = [1,2])
     swapError = pauliDictMutil(cz,I_single;mode=2)
@@ -270,10 +276,11 @@ end
 end
 
 @everywhere function genCopyError(p::Float64)
-    p_single = p/10
+    p_single = p/6
+    p_idle_twoqgate = 1.75*p_single
     cz = genPauliDict(p,[1,2];indexList = [1,2])
     I_single = pauliDictMutil(genPauliDict(p_single,1;indexList=[1,2]),genPauliDict(p_single,1;indexList=[1,2]);mode=2)
-    IdentityError = genLongIdentityError(p_single,3)
+    IdentityError = genLongIdentityError(p_single,p_idle_twoqgate,3)
     copyError = pauliDictMutil(I_single,pauliDictMutil(cz,I_single;mode=2);mode=2)
     return copyError,IdentityError,cz
 end
@@ -1556,11 +1563,13 @@ function getFidelityGate(n::Int64,classicalData::Vector{Int64},address::Vector{I
     expectionArray = SharedArray(zeros(Float64, 2^(n+1)-2, shot))
     # fidelityArraySelect = SharedArray{Float64}(2, shot)
     fidelityArraySelect = SharedArray{Float64}(n+1, shot)
-    p_single = p/10
-    CswapError = genCswapDepolarizeError(p)
-    singleIdentityError = genLongIdentityError(p_single,1)
-    MiddleIdentityError = genLongIdentityError(p_single,5)
-    LongIdentityError = genLongIdentityError(p_single,11)
+    p_single = p/6
+    p_idle_twoqgate = 1.75*p_single
+    # two qubit gate idle error = two qubit gate lantency(35ns)/ single qubit gate latency(20ns) * single qubit gate idle error
+    CswapError = genCswapDepolarizeError(p,p_single,p_idle_twoqgate)
+    singleIdentityError = genLongIdentityError(p_single,p_idle_twoqgate,1)
+    MiddleIdentityError = genLongIdentityError(p_single,p_idle_twoqgate,5)
+    LongIdentityError = genLongIdentityError(p_single,p_idle_twoqgate,11)
     swapError = genSwapError(p,5)
     longSwapError = genSwapError(p,11)
     CopyLeftError,CopyLeftIdentityError,cz = genCopyError(p)
@@ -1731,7 +1740,9 @@ function sampleQramGateP(n::Int64,shots::Int64,classicalData::Vector{Int64},addr
     end
 end
 
-for p in [3e-9,5e-9,8e-9,1e-9]
+##[1e-8,5e-8,1e-7,5e-7,1e-6,5e-6,1e-5,5e-5,1e-4,5e-4,1e-3,0.0038,5e-3,1e-2]
+
+for p in [1e-8,5e-8,1e-7,5e-7,1e-6,5e-6,1e-5,5e-5,1e-4,5e-4,1e-3,0.0038,5e-3,1e-2]
     basicPath = "results"
     folderName = "$(p)_result"
     full_path = joinpath(basicPath, folderName)
@@ -1753,7 +1764,7 @@ for p in [3e-9,5e-9,8e-9,1e-9]
     else
         shots = 1e8
     end
-    for n = 7:7
+    for n = 8:9
         classicalData = ones(Int,2^n)
         address = [i for i = 0:2^n-1]
         addressCoefficient = ones(Float64,2^n)
