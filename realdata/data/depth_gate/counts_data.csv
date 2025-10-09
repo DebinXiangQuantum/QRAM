@@ -1,4 +1,5 @@
 level,num_qubits,swap_depth,cswap_depth,cswap_count,swap_count,h_count,x_count
+1,3,0,0,0,0,2,2
 2,9,8,8,8,8,2,8
 3,18,10,18,28,14,5,28
 4,35,12,28,72,24,6,72
