@@ -12,6 +12,8 @@ build/
 develop-eggs/
 dist/
 downloads/
+results/
+realdata/figs/
 eggs/
 .eggs/
 lib/
